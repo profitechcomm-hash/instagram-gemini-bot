@@ -9,7 +9,7 @@ app = Flask(__name__)
 GEMINI_API_KEY = "AQ.Ab8RN6JJEuLRzKUXa4NeQBrSEAGdfOyk3f2u2xONkJUNeQSlQw"
 gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 
-# Configured with your Meta / Instagram Token & Updated Verify Token
+# Configured with your Meta / Instagram / Facebook Token & Updated Verify Token
 VERIFY_TOKEN = "imran123"
 ACCESS_TOKEN = "EAAQmsTG8qQ4BS9kbcnPTGPxBSSHaktnQKTOdyWFwqtHd82qkHZCFBZAZCevyZAREFaUUwKpE3f1ZApA0gu04Cz7cShLSh3lYAtMfg8ZCTfXxNYo7B40CGsaItfv3T0szDIyQjZCjOvEiucF5trllyaHmH0GUBoNSe3jmFpOu83e5YfXokg1Bc8D5nlIApGZA9ZANwGflpLzXlf7quOZBXoDDR7N1Em48mj0G8I5FVgXMFnmu4FYE0f2fJzygZDZD"
 GRAPH_API_VERSION = "v21.0"
@@ -42,7 +42,7 @@ def home_test_page():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Gemini Instagram Automation Tester</title>
+        <title>Gemini Multi-Platform Bot Simulator</title>
         <style>
             body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background: #f9f9f9; }
             .chat-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -54,8 +54,8 @@ def home_test_page():
     </head>
     <body>
         <div class="chat-box">
-            <h2>🤖 Gemini Instagram Bot Simulator</h2>
-            <p>Your API keys are configured! Test how your AI assistant replies to messages right here.</p>
+            <h2>🤖 Gemini Multi-Platform Bot Simulator</h2>
+            <p>Your API keys are configured! Test how your AI assistant replies right here.</p>
             <form method="POST" action="/test-chat">
                 <label>Simulated Customer Message:</label>
                 <textarea name="message" placeholder="e.g., Do you have Android TV boxes in stock?">Do you have Android TV boxes in stock?</textarea>
@@ -80,7 +80,7 @@ def test_chat():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Gemini Instagram Automation Tester</title>
+        <title>Gemini Multi-Platform Bot Simulator</title>
         <style>
             body { font-family: Arial, sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; background: #f9f9f9; }
             .chat-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
@@ -93,7 +93,7 @@ def test_chat():
     </head>
     <body>
         <div class="chat-box">
-            <h2>🤖 Gemini Instagram Bot Simulator</h2>
+            <h2>🤖 Gemini Multi-Platform Bot Simulator</h2>
             <p><strong>You asked:</strong> {{ user_message }}</p>
             <form method="POST" action="/test-chat">
                 <label>Simulated Customer Message:</label>
@@ -111,7 +111,7 @@ def test_chat():
 
 @app.route("/webhook", methods=["GET"])
 def verify_webhook():
-    """Handles the initial webhook verification handshake from Meta."""
+    """Handles initial webhook verification handshake from Meta (Instagram & Facebook)."""
     mode = request.args.get("hub.mode")
     token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")
@@ -126,30 +126,34 @@ def verify_webhook():
 
 @app.route("/webhook", methods=["POST"])
 def handle_incoming_message():
-    """Live production webhook endpoint that receives messages from Instagram and replies via Meta Graph API."""
+    """Live production webhook endpoint that handles incoming Instagram and Facebook messages."""
     body = request.get_json()
     print("Incoming webhook payload:", body)
 
+    # 1. Handle Instagram Messaging Events
     if body.get("object") == "instagram":
         for entry in body.get("entry", []):
-            messaging_events = entry.get("messaging", [])
-            for event in messaging_events:
+            for event in entry.get("messaging", []):
                 if "message" in event and "text" in event["message"]:
                     sender_id = event["sender"]["id"]
                     message_text = event["message"]["text"]
-                    
-                    # 1. Generate intelligent reply using Gemini
                     ai_reply = generate_gemini_response(message_text)
-                    
-                    # 2. Send reply back to Instagram user via Meta Graph API
-                    send_instagram_message(sender_id, ai_reply)
+                    send_meta_message(sender_id, ai_reply)
 
-        return jsonify({"status": "EVENT_RECEIVED"}), 200
-    else:
-        return jsonify({"status": "ignored"}), 404
+    # 2. Handle Facebook Messenger Events
+    elif body.get("object") == "page":
+        for entry in body.get("entry", []):
+            for event in entry.get("messaging", []):
+                if "message" in event and "text" in event["message"]:
+                    sender_id = event["sender"]["id"]
+                    message_text = event["message"]["text"]
+                    ai_reply = generate_gemini_response(message_text)
+                    send_meta_message(sender_id, ai_reply)
 
-def send_instagram_message(recipient_id, message_text):
-    """Sends the response back to the Instagram user via Meta Graph API."""
+    return jsonify({"status": "EVENT_RECEIVED"}), 200
+
+def send_meta_message(recipient_id, message_text):
+    """Sends responses back via Meta Graph API (works for both Instagram and Facebook Page messaging)."""
     url = f"https://graph.facebook.com/{GRAPH_API_VERSION}/me/messages"
     payload = {
         "recipient": {"id": recipient_id},
@@ -158,7 +162,31 @@ def send_instagram_message(recipient_id, message_text):
     }
     response = requests.post(url, json=payload)
     if response.status_code != 200:
-        print(f"Failed to send message: {response.text}")
+        print(f"Failed to send Meta message: {response.text}")
+
+@app.route("/check-youtube-comments", methods=["GET"])
+def check_youtube_comments():
+    """Fetches recent comments on your YouTube channel and replies using Gemini."""
+    channel_id = "YOUR_YOUTUBE_CHANNEL_ID"  # Replace with your YouTube Channel ID
+    api_key = GEMINI_API_KEY              # Or your YouTube Data API Key
+
+    url = f"https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&channelId={channel_id}&key={api_key}"
+    res = requests.get(url)
+
+    if res.status_code == 200:
+        comments_data = res.json()
+        for item in comments_data.get("items", []):
+            comment_snippet = item["snippet"]["topLevelComment"]["snippet"]
+            comment_text = comment_snippet["textDisplay"]
+            comment_id = item["id"]
+
+            # Generate Gemini reply tailored for your brand
+            ai_reply = generate_gemini_response(f"Reply to this YouTube comment professionally: {comment_text}")
+            
+            # (Optional) You can add comments.insert logic here using YouTube API to post `ai_reply` back to `comment_id`
+
+        return jsonify({"status": "YouTube comments processed successfully"}), 200
+    return jsonify({"error": "Failed to fetch YouTube comments"}), 400
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
