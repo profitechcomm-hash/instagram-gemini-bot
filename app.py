@@ -167,7 +167,7 @@ def send_meta_message(recipient_id, message_text):
 @app.route("/check-youtube-comments", methods=["GET"])
 def check_youtube_comments():
     """Fetches recent comments on your YouTube channel and replies using Gemini."""
-    channel_id = "YOUR_YOUTUBE_CHANNEL_ID"  # Replace with your YouTube Channel ID
+    channel_id = "UC6Rtwzh0YOeo9526B2xU_gg"  # Replace with your YouTube Channel ID
     api_key = GEMINI_API_KEY              # Or your YouTube Data API Key
 
     url = f"https://www.googleapis.com/youtube/v3/commentThreads?part=snippet&channelId={channel_id}&key={api_key}"
